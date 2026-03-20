@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JDK 26 Features — JavaClub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .deck {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      text-align: center;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── Typography ── */
+    .slide h1 { font-size: 3.2rem; font-weight: 700; line-height: 1.15; }
+    .slide h2 { font-size: 2rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .slide h3 { font-size: 1.3rem; font-weight: 500; color: #8b949e; margin-bottom: 1.6rem; }
+    .slide p  { font-size: 1.15rem; color: #8b949e; margin-top: 0.8rem; line-height: 1.6; }
+
+    .jep-tag {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+
+    .tag-preview  { background: #1f3a5f; color: #58a6ff; }
+    .tag-incubator{ background: #2d1f3f; color: #bc8cff; }
+    .tag-feature  { background: #1f3a2f; color: #3fb950; }
+    .tag-removal  { background: #3f1f1f; color: #f85149; }
+    .tag-perf     { background: #3f2d1f; color: #e3b341; }
+
+    /* ── Points list ── */
+    .points {
+      list-style: none;
+      margin-top: 1.4rem;
+      text-align: left;
+      width: 100%;
+      max-width: 820px;
+    }
+
+    .points li {
+      font-size: 1.1rem;
+      line-height: 1.5;
+      padding: 10px 0 10px 1.8rem;
+      border-bottom: 1px solid #21262d;
+      position: relative;
+      color: #c9d1d9;
+    }
+
+    .points li:last-child { border-bottom: none; }
+
+    .points li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #58a6ff;
+    }
+
+    .points li .sub {
+      display: block;
+      font-size: 0.9rem;
+      color: #6e7681;
+      margin-top: 3px;
+    }
+
+    /* ── Code inline ── */
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.92em;
+      color: #79c0ff;
+    }
+
+    /* ── Two-column layout ── */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 1000px;
+      margin-top: 1.4rem;
+      text-align: left;
+    }
+
+    .col-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 20px 24px;
+    }
+
+    .col-card h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #58a6ff;
+      margin-bottom: 10px;
+    }
+
+    .col-card ul {
+      list-style: none;
+      font-size: 0.95rem;
+      color: #c9d1d9;
+      line-height: 1.7;
+    }
+
+    .col-card ul li::before { content: '• '; color: #58a6ff; }
+
+    /* ── Title slide ── */
+    .slide-title { background: radial-gradient(ellipse at 50% 0%, #1a2a4a 0%, #0d1117 60%); }
+    .slide-title h1 { background: linear-gradient(135deg, #58a6ff, #bc8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .slide-title .subtitle { font-size: 1.3rem; color: #8b949e; margin-top: 1rem; }
+    .slide-title .meta { font-size: 1rem; color: #6e7681; margin-top: 2rem; }
+    .slide-title .jep-count { font-size: 1rem; color: #3fb950; margin-top: 0.5rem; }
+
+    /* ── Timeline slide ── */
+    .slide-timeline img {
+      max-width: 90%;
+      max-height: 72vh;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+      margin-top: 1.2rem;
+    }
+
+    /* ── Beyond JEPs ── */
+    .badge-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 1.6rem;
+      max-width: 860px;
+    }
+
+    .badge {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 0.95rem;
+      color: #c9d1d9;
+      line-height: 1.4;
+      text-align: left;
+      min-width: 240px;
+    }
+
+    .badge strong { color: #e3b341; display: block; margin-bottom: 3px; }
+
+    /* ── Closing slide ── */
+    .slide-closing { background: radial-gradient(ellipse at 50% 100%, #1a2a1a 0%, #0d1117 60%); }
+    .slide-closing h1 { font-size: 2.6rem; }
+    .flag { font-size: 2rem; margin-top: 1.2rem; }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .nav button {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .nav button:hover { background: #30363d; }
+    .nav button:disabled { opacity: 0.3; cursor: default; }
+
+    .slide-counter {
+      font-size: 0.85rem;
+      color: #6e7681;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* ── Progressive reveal ── */
+    .points li, .col-card, .badge {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    .points li.revealed, .col-card.revealed, .badge.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Progress bar ── */
+    .progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #58a6ff, #bc8cff);
+      transition: width 0.3s ease;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. Title -->
+  <div class="slide slide-title active">
+    <h1>What's New in JDK 26</h1>
+    <p class="subtitle">Released March 17, 2026 · 6-month cadence</p>
+    <p class="jep-count">10 JEPs · Preview · Incubator · GA features</p>
+    <p class="meta">LvivJavaClub Meetup · 2026</p>
+  </div>
+
+  <!-- 2. Release Timeline -->
+  <div class="slide slide-timeline">
+    <h2>17th Feature Release · 6-Month Cadence</h2>
+    <h3>Every 6 months, on schedule, no surprises</h3>
+    <img
+      src="https://blogs.oracle.com/java/wp-content/uploads/sites/114/2026/03/JDK-26_17th-feature-release-6monthcadence.png"
+      alt="JDK 26 release timeline">
+  </div>
+
+  <!-- 3. Agenda -->
+  <div class="slide">
+    <h2>Agenda</h2>
+    <h3>10 JEPs + what didn't make the JEP list</h3>
+    <div class="cols" style="grid-template-columns: 1fr 1fr 1fr; max-width: 1100px;">
+      <div class="col-card">
+        <h4>Preview / Incubator</h4>
+        <ul>
+          <li>JEP 524 — PEM Encodings of Cryptographic Objects</li>
+          <li>JEP 525 — Structured Concurrency</li>
+          <li>JEP 526 — Lazy Constants</li>
+          <li>JEP 529 — Vector API</li>
+          <li>JEP 530 — Primitive Types in Patterns, instanceof, and switch</li>
+        </ul>
+      </div>
+      <div class="col-card">
+        <h4>GA Features</h4>
+        <ul>
+          <li>JEP 517 — HTTP/3 for the HTTP Client API</li>
+          <li>JEP 516 — Ahead-of-Time Object Caching</li>
+          <li>JEP 522 — G1: Improve Throughput by Reducing Synchronization</li>
+        </ul>
+      </div>
+      <div class="col-card">
+        <h4>Cleanup</h4>
+        <ul>
+          <li>JEP 500 — Prepare to Make Final Mean Final</li>
+          <li>JEP 504 — Remove the Applet API</li>
+          <li>Beyond JEPs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. JEP 517 HTTP/3 -->
+  <div class="slide">
+    <span class="jep-tag tag-feature">JEP 517 · GA</span>
+    <h2>HTTP/3 for the HTTP Client API</h2>
+    <h3>QUIC/UDP comes to <code>java.net.http</code></h3>
+    <ul class="points">
+      <li>New <code>HttpClient.Version.HTTP_3</code> constant — opt-in per client or per request
+        <span class="sub">Default remains HTTP/2; falls back transparently if server doesn't support HTTP/3</span>
+      </li>
+      <li>Discovery via <code>Alt-Svc</code> header — JVM caches it, next request upgrades automatically</li>
+      <li>New: <code>BodyPublishers.ofFileChannel(FileChannel, start, length)</code>
+        <span class="sub">Stream large file uploads without loading the entire file into heap</span>
+      </li>
+      <li><code>HttpRequest.Builder::timeout</code> now covers full lifecycle including body consumption</li>
+    </ul>
+  </div>
+
+  <!-- 5. JEP 516 AOT -->
+  <div class="slide">
+    <span class="jep-tag tag-perf">JEP 516 · Performance</span>
+    <h2>Ahead-of-Time Object Caching</h2>
+    <h3>Project Leyden — cache JVM objects across restarts</h3>
+    <ul class="points">
+      <li>Cache heap objects (class metadata, strings, reflection data) from a training run
+        <span class="sub">Serialized to a shared archive, replayed on next startup</span>
+      </li>
+      <li>Works with <strong>any GC</strong> — not just G1 (previous limitation removed)</li>
+      <li>Goal: drastically cut time-to-first-request in containerized / serverless environments</li>
+      <li>Pairs with CDS (Class Data Sharing) — next step toward "closed-world" optimization</li>
+    </ul>
+  </div>
+
+  <!-- 6. JEP 522 G1 -->
+  <div class="slide">
+    <span class="jep-tag tag-perf">JEP 522 · Performance</span>
+    <h2>G1: Improve Throughput by Reducing Synchronization</h2>
+    <h3>Throughput improvement for write-heavy workloads</h3>
+    <ul class="points">
+      <li>Adds a second card table to track old-gen → young-gen references during mutator execution</li>
+      <li>Reduces remembered-set scanning overhead during minor GCs</li>
+      <li>Zero configuration — automatic; no flags needed</li>
+      <li>Most visible in allocation-heavy apps (web servers, batch processors)</li>
+    </ul>
+  </div>
+
+  <!-- 7. JEP 524 PEM -->
+  <div class="slide">
+    <span class="jep-tag tag-preview">JEP 524 · 2nd Preview</span>
+    <h2>PEM Encodings of Cryptographic Objects</h2>
+    <h3><code>PEMEncoder</code> / <code>PEMDecoder</code> — finally a clean API</h3>
+    <ul class="points">
+      <li>Encode/decode keys, certificates, CRLs — one line instead of 15
+        <span class="sub">Before: strip headers → Base64 → EncryptedPrivateKeyInfo → SecretKeyFactory → Cipher → KeyFactory</span>
+      </li>
+      <li>Encrypted keys: <code>PEMEncoder.of().withEncryption(passphrase).encodeToString(key)</code></li>
+      <li>New in JDK 26: <code>KeyPair</code> encode/decode; <code>PEMRecord</code> → <code>PEM</code> with <code>decode()</code> returning raw bytes</li>
+      <li><code>EncryptedPrivateKeyInfo.encryptKey()</code> → <code>encrypt()</code>, now accepts <code>DEREncodable</code></li>
+    </ul>
+  </div>
+
+  <!-- 8. JEP 525 Structured Concurrency -->
+  <div class="slide">
+    <span class="jep-tag tag-preview">JEP 525 · 6th Preview</span>
+    <h2>Structured Concurrency</h2>
+    <h3>Related tasks as one unit of work — no orphaned threads</h3>
+    <div class="cols">
+      <div class="col-card">
+        <h4>Built-in Joiners</h4>
+        <ul>
+          <li><code>allSuccessfulOrThrow()</code> — all must succeed</li>
+          <li><code>awaitAllSuccessfulOrThrow()</code> — collect then throw</li>
+          <li><code>awaitAll()</code> — wait regardless of failures</li>
+          <li><code>anySuccessfulOrThrow()</code> — first wins</li>
+          <li><code>allUntil(predicate)</code> — stop on match</li>
+        </ul>
+      </div>
+      <div class="col-card">
+        <h4>Changes in JDK 26</h4>
+        <ul>
+          <li><code>allSuccessfulOrThrow()</code> returns <code>List&lt;T&gt;</code> (was <code>Stream&lt;Subtask&gt;</code>)</li>
+          <li><code>allUntil()</code> returns <code>List&lt;Subtask&gt;</code></li>
+          <li><code>anySuccessfulResultOrThrow()</code> → <code>anySuccessfulOrThrow()</code></li>
+          <li><code>Joiner</code> gains <code>onTimeout()</code> callback</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. JEP 526 Lazy Constants -->
+  <div class="slide">
+    <span class="jep-tag tag-preview">JEP 526 · 2nd Preview</span>
+    <h2>Lazy Constants</h2>
+    <h3>Formerly "Stable Values" — renamed and simplified in JDK 26</h3>
+    <ul class="points">
+      <li><code>LazyConstant&lt;T&gt;</code> — initialized at most once, thread-safe, JIT-constant after first use
+        <span class="sub">Singleton without Double-Checked Locking boilerplate</span>
+      </li>
+      <li><code>Map.ofLazy(keys, fn)</code> — per-key lazy init; unused keys are never computed</li>
+      <li><code>List.ofLazy(size, fn)</code> — per-index lazy init; unaccessed pages never loaded</li>
+      <li>Renamed from <code>StableValue</code>; low-level methods (<code>orElseSet</code>, <code>trySet</code>) removed</li>
+    </ul>
+  </div>
+
+  <!-- 10. JEP 529 Vector API -->
+  <div class="slide">
+    <span class="jep-tag tag-incubator">JEP 529 · 11th Incubator</span>
+    <h2>Vector API</h2>
+    <h3>SIMD operations — still waiting for Project Valhalla</h3>
+    <ul class="points">
+      <li>Express vector computations that map to CPU SIMD instructions (AVX2, SVE, …)</li>
+      <li>Still incubating because <code>FloatVector</code> objects are heap-allocated — no value types yet
+        <span class="sub">Project Valhalla's primitive classes will eliminate the allocation overhead</span>
+      </li>
+      <li>JIT already auto-vectorizes simple scalar loops — so Vector API wins only on complex patterns
+        <span class="sub">Multiple source arrays (R/G/B channels), cross-element ops, explicit lane control</span>
+      </li>
+      <li>11th preview — API is stable; GA blocked solely on Valhalla</li>
+    </ul>
+  </div>
+
+  <!-- 11. JEP 530 Primitive Patterns -->
+  <div class="slide">
+    <span class="jep-tag tag-preview">JEP 530 · 4th Preview</span>
+    <h2>Primitive Types in Patterns, instanceof, and switch</h2>
+    <h3>Primitives as first-class citizens in patterns</h3>
+    <ul class="points">
+      <li>Primitives in <code>switch</code> expressions — HTTP status ranges, byte flags, …
+        <span class="sub"><code>case int n when n >= 200 && n < 300 -> "OK"</code></span>
+      </li>
+      <li>Precision-fit casts: <code>if (d instanceof int i)</code> — only true if value fits without loss</li>
+      <li><code>boolean</code> in <code>switch</code>: <code>case true</code> / <code>case false</code></li>
+      <li>Closes the gap: records, generics, and now primitives all work uniformly in patterns</li>
+    </ul>
+  </div>
+
+  <!-- 12. JEP 500 Final Means Final -->
+  <div class="slide">
+    <span class="jep-tag tag-removal">JEP 500 · Breaking</span>
+    <h2>Prepare to Make Final Mean Final</h2>
+    <h3>Closing the <code>setAccessible</code> loophole for final fields</h3>
+    <ul class="points">
+      <li>Mutating a <code>final</code> field via reflection now issues a <strong>WARNING</strong> in JDK 26
+        <span class="sub">Future release will throw <code>IllegalAccessException</code> outright</span>
+      </li>
+      <li>New JVM flag: <code>--illegal-final-field-mutation=deny</code> to opt in early</li>
+      <li>New JFR event: <code>jdk.FinalFieldMutation</code> — find culprits without searching logs</li>
+      <li>Records already blocked outright — regular classes are next</li>
+    </ul>
+  </div>
+
+  <!-- 13. JEP 504 Remove Applet -->
+  <div class="slide">
+    <span class="jep-tag tag-removal">JEP 504 · Removal</span>
+    <h2>Remove the Applet API</h2>
+    <h3>27 years · deprecated 2017 · removed 2026</h3>
+    <ul class="points">
+      <li>Removed: <code>java.applet.*</code>, <code>AppletStub</code>, <code>AudioClip</code>, <code>AppletContext</code></li>
+      <li>Browsers dropped plugin support years ago — no runtime could run applets anyway</li>
+      <li>Not the only removal — <code>Thread.stop()</code> also gone after 27 years of deprecation</li>
+    </ul>
+  </div>
+
+  <!-- 14. Beyond JEPs -->
+  <div class="slide">
+    <h2>Beyond the JEPs</h2>
+    <h3>No JEP number, still worth knowing</h3>
+    <div class="badge-list">
+      <div class="badge">
+        <strong>Thread.stop() removed</strong>
+        Deprecated since JDK 1.2 (1998). Use <code>interrupt()</code> instead.
+      </div>
+      <div class="badge">
+        <strong>Default heap size: 1/500 of RAM</strong>
+        Was 1/64. Containers with 16 GB RAM → 32 MB heap by default (was 256 MB).
+      </div>
+      <div class="badge">
+        <strong>Virtual threads — no class-init pinning</strong>
+        VTs no longer pin the carrier thread during class initialization.
+      </div>
+      <div class="badge">
+        <strong>Unicode 17.0</strong>
+        New scripts, emoji, and code points in <code>Character</code> and regex.
+      </div>
+      <div class="badge">
+        <strong>Dark mode for Javadoc</strong>
+        Built-in sun/moon toggle in the generated HTML. No more browser extensions or CSS hacks.
+      </div>
+    </div>
+  </div>
+
+  <!-- 15. Closing -->
+  <div class="slide slide-closing">
+    <h1>JDK 26 — Ship It</h1>
+    <p style="margin-top: 1.4rem;">Waiting for JDK 27 · September 2026</p>
+    <div class="flag">🇺🇦 СЛАВА УКРАЇНІ</div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="prev" onclick="go(-1)" disabled>← Prev</button>
+  <span class="slide-counter" id="counter">1 / 15</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  let step = 0;
+
+  function items(slideEl) {
+    return [...slideEl.querySelectorAll('.points li, .col-card, .badge')];
+  }
+
+  function activateSlide(index, showAll) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, index));
+    const el = slides[current];
+    el.classList.add('active');
+    const its = items(el);
+    its.forEach(i => i.classList.remove('revealed'));
+    step = 0;
+    if (showAll) {
+      its.forEach(i => i.classList.add('revealed'));
+      step = its.length;
+    }
+    updateNav();
+  }
+
+  function go(dir) {
+    const its = items(slides[current]);
+    if (dir > 0) {
+      if (step < its.length) {
+        its[step].classList.add('revealed');
+        step++;
+      } else if (current < total - 1) {
+        activateSlide(current + 1, false);
+      }
+    } else {
+      if (step > 0) {
+        step--;
+        its[step].classList.remove('revealed');
+      } else if (current > 0) {
+        activateSlide(current - 1, true);
+      }
+    }
+    updateNav();
+  }
+
+  function updateNav() {
+    const its = items(slides[current]);
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('prev').disabled = current === 0 && step === 0;
+    document.getElementById('next').disabled = current === total - 1 && step === its.length;
+    document.getElementById('progress').style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     { e.preventDefault(); go(-1); }
+  });
+
+  // Click anywhere on the slide (not on buttons) to advance
+  document.getElementById('deck').addEventListener('click', e => {
+    if (!e.target.closest('button')) go(1);
+  });
+
+  activateSlide(0, false);
+</script>
+</body>
+</html>
