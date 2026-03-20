@@ -59,6 +59,7 @@ public class Http3App {
 
       HttpRequest request = HttpRequest.newBuilder()
           .uri(URI.create("https://cloudflare.com"))
+          .version(HttpClient.Version.HTTP_3)
           .build();
 
       try {

@@ -2,6 +2,7 @@ package features.jep525_structured_concurrency;
 
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.random.RandomGenerator;
 
 /**
  * Demo 1: Joiner.allSuccessfulOrThrow()
@@ -31,6 +32,9 @@ public class AllMustSucceedDemo {
 
   static String fetchWeather(String city) throws InterruptedException {
     Thread.sleep(800);
+    if (RandomGenerator.getDefault().nextBoolean()){
+      throw new RuntimeException("Smth went wrong..");
+    }
     return "Sunny, 5°C in " + city;
   }
 

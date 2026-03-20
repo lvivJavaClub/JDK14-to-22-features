@@ -16,6 +16,22 @@ import java.util.concurrent.StructuredTaskScope.Subtask;
  */
 public class StopWhenFoundDemo {
 
+  // new Joiner strategy scaffold
+  class CustomJoinStrategy implements Joiner<String, String>{
+
+    @Override
+    public boolean onComplete(Subtask<String> subtask) {
+        switch (subtask.state()) {
+
+        }
+      return false;
+    }
+
+    @Override
+    public String result() throws Throwable {
+      return "";
+    }
+  }
   static void main() throws Exception {
     System.out.println("=== allUntil — stop when first match is found ===");
 
